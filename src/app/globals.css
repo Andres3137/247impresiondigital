@@ -1,0 +1,233 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-inter: "Inter", sans-serif;
+    --font-sora: "Sora", sans-serif;
+    --font-chakra: "Chakra Petch", sans-serif;
+    scroll-behavior: smooth;
+
+    /* Duracion + curva unicas del navbar: easeInOutCubic, lenta y simetrica. */
+    --nav-duration: 550ms;
+    --nav-curve: cubic-bezier(0.65, 0, 0.35, 1);
+    --nav-ease: var(--nav-duration) var(--nav-curve);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-white text-navy-900 font-sans antialiased;
+  }
+
+  ::selection {
+    @apply bg-cyan-400/30 text-navy-900;
+  }
+
+  /* Focus visible ring consistente para accesibilidad */
+  :focus-visible {
+    @apply outline-none ring-2 ring-cyan-500 ring-offset-2 ring-offset-white;
+  }
+}
+
+@layer components {
+  /*
+   * Sistema de vidrio (glassmorphism) compartido por el navbar y el panel
+   * del Hero. Un solo lugar define tinte, blur, borde, reflejos y sombra
+   * para que ambas piezas pertenezcan al mismo sistema de diseño.
+   */
+  .glass {
+    /* Tinte azul oscuro, casi transparente. */
+    background-color: rgb(10 22 40 / 0.55);
+    /* Reflejo diagonal: luz en la esquina superior, cian en la inferior. */
+    background-image: linear-gradient(
+      135deg,
+      rgb(255 255 255 / 0.1) 0%,
+      rgb(255 255 255 / 0.02) 28%,
+      rgb(255 255 255 / 0) 58%,
+      rgb(94 240 255 / 0.05) 100%
+    );
+    border: 1px solid rgb(255 255 255 / 0.1);
+    box-shadow:
+      /* Filos iluminados arriba y abajo. */
+      inset 0 1px 0 0 rgb(255 255 255 / 0.12),
+      inset 0 -1px 0 0 rgb(255 255 255 / 0.04),
+      /* Sombra muy ligera que sostiene la pieza flotante. */
+      0 24px 60px -28px rgb(2 8 20 / 0.75);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+  }
+
+  /*
+   * Navbar en reposo (sobre el Hero): vidrio apenas insinuado.
+   * Hereda de .glass y suaviza tinte, blur, borde y sombra.
+   */
+  .glass-nav {
+    background-color: rgb(10 22 40 / 0.28);
+    border-color: rgb(255 255 255 / 0.06);
+    /*
+     * Rango de blur estrecho a proposito: cada frame de una transicion de
+     * backdrop-filter repinta toda la region desenfocada. 12->20px se percibe
+     * como densificacion sin castigar a las GPU integradas.
+     */
+    backdrop-filter: blur(12px) saturate(130%);
+    -webkit-backdrop-filter: blur(12px) saturate(130%);
+    box-shadow:
+      inset 0 1px 0 0 rgb(255 255 255 / 0.08),
+      0 12px 32px -24px rgb(2 8 20 / 0.5);
+    transition:
+      background-color var(--nav-ease),
+      border-color var(--nav-ease),
+      box-shadow var(--nav-ease),
+      backdrop-filter var(--nav-ease),
+      -webkit-backdrop-filter var(--nav-ease),
+      padding var(--nav-ease);
+  }
+
+  /*
+   * Navbar condensado. Flota tambien sobre secciones claras: el tinte sube
+   * para garantizar contraste AA del texto blanco (~7:1 compuesto sobre blanco).
+   */
+  .glass-nav--condensed {
+    background-color: rgb(10 22 40 / 0.72);
+    border-color: rgb(255 255 255 / 0.14);
+    backdrop-filter: blur(20px) saturate(155%);
+    -webkit-backdrop-filter: blur(20px) saturate(155%);
+    box-shadow:
+      inset 0 1px 0 0 rgb(255 255 255 / 0.14),
+      inset 0 -1px 0 0 rgb(255 255 255 / 0.04),
+      0 24px 60px -28px rgb(2 8 20 / 0.75);
+  }
+
+  /* Sin backdrop-filter el tinte debe sostener la legibilidad por si solo. */
+  @supports not (
+    (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+  ) {
+    .glass {
+      background-color: rgb(10 22 40 / 0.92);
+    }
+  }
+
+  /* Texto con degradado de marca */
+  .text-gradient {
+    @apply bg-gradient-to-r from-brand-600 via-brand-500 to-cyan-500 bg-clip-text text-transparent;
+  }
+
+  /*
+   * Etiqueta de seccion. Tipografia pura: sin pildora, sin borde, sin punto.
+   * El caracter lo dan las versales y el interletraje, no la decoracion.
+   */
+  .kicker {
+    @apply text-[0.6875rem] font-semibold uppercase tracking-[0.22em] text-brand-600;
+  }
+
+  .kicker-invert {
+    @apply text-[0.6875rem] font-semibold uppercase tracking-[0.22em] text-cyan-400/90;
+  }
+
+  /* Efecto LED para numeros/acentos del logo */
+  .led {
+    @apply font-display font-bold italic;
+    letter-spacing: -0.01em;
+  }
+
+  .led-glow {
+    text-shadow: 0 0 24px rgba(6, 182, 212, 0.45), 0 0 2px rgba(94, 240, 255, 0.6);
+  }
+
+  /* --- Display de siete segmentos (LedDisplay.tsx) --- */
+
+  /* Glow azul sutil sobre el vector; drop-shadow se compone en GPU. */
+  .led-display {
+    filter: drop-shadow(0 0 6px rgba(34, 223, 245, 0.35))
+      drop-shadow(0 0 22px rgba(49, 131, 251, 0.28));
+    animation: led-breathe 6s ease-in-out infinite;
+    transition: filter 400ms ease;
+  }
+
+  .led-display:hover {
+    filter: drop-shadow(0 0 8px rgba(34, 223, 245, 0.5))
+      drop-shadow(0 0 30px rgba(49, 131, 251, 0.4));
+  }
+
+  /* Segmentos apagados: presentes pero casi imperceptibles. */
+  .led-off {
+    fill: #5ff0ff;
+    opacity: 0.055;
+  }
+
+  /* Ignición escalonada; el delay lo fija cada segmento en línea. */
+  .led-on {
+    animation: led-ignite 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes led-ignite {
+    0% {
+      opacity: 0;
+    }
+    45% {
+      opacity: 1;
+    }
+    60% {
+      opacity: 0.72;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes led-breathe {
+    0%,
+    100% {
+      filter: drop-shadow(0 0 6px rgba(34, 223, 245, 0.32))
+        drop-shadow(0 0 20px rgba(49, 131, 251, 0.24));
+    }
+    50% {
+      filter: drop-shadow(0 0 9px rgba(34, 223, 245, 0.45))
+        drop-shadow(0 0 30px rgba(49, 131, 251, 0.36));
+    }
+  }
+}
+
+@layer utilities {
+  .container-px {
+    @apply px-5 sm:px-8 lg:px-10;
+  }
+
+  /* Duracion + curva del navbar, para que todo se contraiga al unisono. */
+  .nav-ease {
+    transition-duration: var(--nav-duration);
+    transition-timing-function: var(--nav-curve);
+  }
+
+  /* Los logos nacen y mueren en los bordes, nunca se cortan de golpe. */
+  .mask-fade-x {
+    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 10%,
+      black 90%,
+      transparent
+    );
+  }
+
+}
