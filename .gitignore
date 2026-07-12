@@ -8,3 +8,6 @@
 !.env.example
 .vercel
 next-env.d.ts
+
+.vercel
+.env*
